@@ -1,0 +1,10 @@
+package: github.com/mstovicek/go-chapter-route-recommendation
+import:
+- package: github.com/joeshaw/envdecode
+- package: github.com/Sirupsen/logrus
+  version: ~0.11.5
+- package: github.com/gorilla/mux
+  version: ~1.4.0
+- package: github.com/patrickmn/go-cache
+  version: ~2.0.0
+- package: googlemaps.github.io/maps
