@@ -1,7 +1,7 @@
 package api
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/jessevdk/go-flags"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/handler"
@@ -18,68 +18,76 @@ type config struct {
 }
 
 type server struct {
-	logger *log.Logger
+	logger *logrus.Logger
 	config config
 }
 
-func NewApiHttpServer(l *log.Logger) *server {
+func NewApiHttpServer(logger *logrus.Logger) *server {
 	var cnf config
 
 	if _, err := flags.NewParser(&cnf, flags.HelpFlag|flags.PassDoubleDash).Parse(); err != nil {
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 
 	return &server{
-		logger: l,
+		logger: logger,
 		config: cnf,
 	}
 }
 
 func (api *server) Run() {
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
-	r.Handle(
+	googlePlacesAPI, err := places_api.NewGoogleAPI()
+	if err != nil {
+		api.logger.Fatalln(err)
+	}
+
+	router.Handle(
 		"/cities-suggestions/",
 		handler.NewCitiesSuggestion(
 			services.NewPlacesService(
 				cache.New(5*time.Second, 10*time.Second),
-				places_api.NewGoogleAPI(),
+				googlePlacesAPI,
+				api.logger,
 			),
 		),
 	).Methods(http.MethodGet)
 
-	r.Handle(
+	router.Handle(
 		"/cities-info/",
 		handler.NewCitiesInfo(
 			services.NewPlacesService(
 				cache.New(5*time.Second, 10*time.Second),
-				places_api.NewGoogleAPI(),
+				googlePlacesAPI,
+				api.logger,
 			),
 		),
 	).Methods(http.MethodPost)
 
-	r.Handle(
+	router.Handle(
 		"/distances-matrix/",
 		handler.NewCitiesDistances(
 			services.NewPlacesService(
 				cache.New(5*time.Second, 10*time.Second),
-				places_api.NewGoogleAPI(),
+				googlePlacesAPI,
+				api.logger,
 			),
 		),
 	).Methods(http.MethodPost)
 
-	http.Handle("/", r)
+	http.Handle("/", router)
 
-	router := middleware.NewRecovery(
+	handler := middleware.NewRecovery(
 		api.logger,
 		middleware.NewLogResponseTime(
 			api.logger,
 			middleware.NewJsonHeader(
-				r,
+				router,
 			),
 		),
 	)
 
-	log.Infof("Listening on the address %s", api.config.Listen)
-	log.Fatal(http.ListenAndServe(api.config.Listen, router))
+	api.logger.Infof("Listening on the address %s", api.config.Listen)
+	api.logger.Fatal(http.ListenAndServe(api.config.Listen, handler))
 }

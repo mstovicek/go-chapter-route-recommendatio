@@ -1,38 +1,50 @@
 package services
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/mstovicek/go-chapter-route-recommendation/entity"
+	"sort"
+	"strings"
 	"sync"
+	"time"
 )
 
 const cachePrefixPlace = "place_"
 const cachePrefixSuggestion = "suggestion_"
+const cachePrefixDistances = "distances_"
 
 type placesService struct {
-	cache Cache
-	api   PlacesAPI
+	cache  Cache
+	api    PlacesAPI
+	logger *logrus.Logger
 }
 
-func NewPlacesService(c Cache, a PlacesAPI) *placesService {
+func NewPlacesService(cache Cache, api PlacesAPI, logger *logrus.Logger) *placesService {
 	return &placesService{
-		c,
-		a,
+		cache:  cache,
+		api:    api,
+		logger: logger,
 	}
 }
 
-func (s *placesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place {
+func (service *placesService) GetPlacesCollectionByPlaceIds(placeIDs []string) []entity.Place {
+	start := time.Now()
+
+	service.logger.WithFields(logrus.Fields{
+		"places": placeIDs,
+	}).Info("Fetching places information")
+
 	var waitGroup sync.WaitGroup
 
 	placesChan := make(chan *entity.Place)
 
 	placesCollection := []entity.Place{}
 
-	for _, placeID := range placeIds {
+	for _, placeID := range placeIDs {
 		waitGroup.Add(1)
 		go func(placeID string) {
-			p := s.getPlace(placeID)
-			placesChan <- p
+			place := service.getPlace(placeID)
+			placesChan <- place
 		}(placeID)
 	}
 
@@ -47,65 +59,122 @@ func (s *placesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entit
 
 	waitGroup.Wait()
 
+	service.logger.WithFields(logrus.Fields{
+		"places": placeIDs,
+		"time":   time.Since(start),
+	}).Info("Fetched places information")
+
 	return placesCollection
 }
 
-func (s *placesService) getPlace(placeID string) *entity.Place {
-	cachedPlace, found := s.cache.Get(cachePrefixPlace + placeID)
+func (service *placesService) getPlace(placeID string) *entity.Place {
+	cacheKey := cachePrefixPlace + placeID
+
+	cachedPlace, found := service.cache.Get(cacheKey)
 	if found {
-		log.WithFields(log.Fields{
+		service.logger.WithFields(logrus.Fields{
 			"placeID": placeID,
 		}).Info("Returning cached place")
 
 		return cachedPlace.(*entity.Place)
 	}
 
-	p, err := s.api.GetPlaceDetail(placeID)
+	start := time.Now()
+
+	service.logger.WithFields(logrus.Fields{
+		"placeID": placeID,
+	}).Info("Fetching place information")
+
+	p, err := service.api.GetPlaceDetail(placeID)
 	if err != nil {
-		log.WithFields(log.Fields{
+		service.logger.WithFields(logrus.Fields{
 			"placeID": placeID,
 			"err":     err.Error(),
 		}).Error("Cannot get place")
 		return nil
 	}
 
-	s.cache.Set(cachePrefixPlace+placeID, p, 0)
+	service.logger.WithFields(logrus.Fields{
+		"placeID": placeID,
+		"time":    time.Since(start),
+	}).Info("Fetched place information")
+
+	service.cache.Set(cacheKey, p, 0)
 
 	return p
 }
 
-func (s *placesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
-	cachedSuggestions, found := s.cache.Get(cachePrefixSuggestion + keyword)
+func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
+	cacheKey := cachePrefixSuggestion + keyword
+
+	cachedSuggestions, found := service.cache.Get(cacheKey)
 	if found {
-		log.WithFields(log.Fields{
+		service.logger.WithFields(logrus.Fields{
 			"keyword": keyword,
 		}).Info("Returning cached suggestions")
 
 		return cachedSuggestions.([]entity.Suggestion)
 	}
 
-	suggestions, err := s.api.GetPlaceAutocompleteSuggestions(keyword)
+	start := time.Now()
+
+	service.logger.WithFields(logrus.Fields{
+		"keyword": keyword,
+	}).Info("Fetching suggestions")
+
+	suggestions, err := service.api.GetPlaceAutocompleteSuggestions(keyword)
 	if err != nil {
-		log.WithFields(log.Fields{
+		service.logger.WithFields(logrus.Fields{
 			"keyword": keyword,
 			"err":     err.Error(),
 		}).Error("Cannot get suggestions")
 		return []entity.Suggestion{}
 	}
 
-	s.cache.Set(cachePrefixSuggestion+keyword, suggestions, 0)
+	service.logger.WithFields(logrus.Fields{
+		"keyword": keyword,
+		"time":    time.Since(start),
+	}).Info("Fetched suggestions")
+
+	service.cache.Set(cacheKey, suggestions, 0)
 
 	return suggestions
 }
 
-func (s *placesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
-	distanceMatrix, err := s.api.GetPlacesDistance(placesIDs)
+func (service *placesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
+	sort.Strings(placesIDs)
+	cacheKey := cachePrefixDistances + strings.Join(placesIDs, "|")
+
+	cachedDistanceMatrix, found := service.cache.Get(cacheKey)
+	if found {
+		service.logger.WithFields(logrus.Fields{
+			"places": cacheKey,
+		}).Info("Returning cached distance matrix")
+
+		return cachedDistanceMatrix.(entity.DistanceMatrix)
+	}
+
+	start := time.Now()
+
+	service.logger.WithFields(logrus.Fields{
+		"places": placesIDs,
+	}).Info("Fetching distance matrix")
+
+	distanceMatrix, err := service.api.GetPlacesDistance(placesIDs)
 	if err != nil {
-		log.WithFields(log.Fields{
+		service.logger.WithFields(logrus.Fields{
 			"places": placesIDs,
 			"err":    err.Error(),
 		}).Error("Cannot get distances")
 		return entity.NewDistanceMatrix()
 	}
+
+	service.logger.WithFields(logrus.Fields{
+		"places": placesIDs,
+		"time":   time.Since(start),
+	}).Info("Fetched distance")
+
+	service.cache.Set(cacheKey, distanceMatrix, 0)
+
 	return distanceMatrix
 }
