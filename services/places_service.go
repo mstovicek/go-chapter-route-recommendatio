@@ -11,10 +11,10 @@ const cachePrefixSuggestion = "suggestion_"
 
 type PlacesService struct {
 	cache Cache
-	api   API
+	api   PlacesAPI
 }
 
-func NewPlacesService(c Cache, a API) *PlacesService {
+func NewPlacesService(c Cache, a PlacesAPI) *PlacesService {
 	return &PlacesService{
 		c,
 		a,
