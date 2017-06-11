@@ -14,12 +14,12 @@ type config struct {
 	GoogleAPIKey string `env:"API_KEY,required,strict"`
 }
 
-type GoogleAPI struct {
+type googleAPI struct {
 	cnf        config
 	googleMaps *maps.Client
 }
 
-func NewGoogleAPI() *GoogleAPI {
+func NewGoogleAPI() *googleAPI {
 	cnf := config{}
 
 	if err := envdecode.Decode(&cnf); err != nil {
@@ -31,13 +31,13 @@ func NewGoogleAPI() *GoogleAPI {
 		log.Fatalln(err)
 	}
 
-	return &GoogleAPI{
+	return &googleAPI{
 		cnf:        cnf,
 		googleMaps: googleMaps,
 	}
 }
 
-func (googleAPI *GoogleAPI) GetPlaceDetail(placeID string) (*entity.Place, error) {
+func (api *googleAPI) GetPlaceDetail(placeID string) (*entity.Place, error) {
 	start := time.Now()
 
 	log.WithFields(log.Fields{
@@ -49,7 +49,7 @@ func (googleAPI *GoogleAPI) GetPlaceDetail(placeID string) (*entity.Place, error
 		Language: "en",
 	}
 
-	res, err := googleAPI.googleMaps.PlaceDetails(context.Background(), &req)
+	res, err := api.googleMaps.PlaceDetails(context.Background(), &req)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"placeID": placeID,
@@ -73,7 +73,7 @@ func (googleAPI *GoogleAPI) GetPlaceDetail(placeID string) (*entity.Place, error
 	return &p, nil
 }
 
-func (googleAPI *GoogleAPI) GetPlaceAutocompleteSuggestions(query string) ([]entity.Suggestion, error) {
+func (api *googleAPI) GetPlaceAutocompleteSuggestions(query string) ([]entity.Suggestion, error) {
 	start := time.Now()
 
 	log.WithFields(log.Fields{
@@ -86,7 +86,7 @@ func (googleAPI *GoogleAPI) GetPlaceAutocompleteSuggestions(query string) ([]ent
 		Language: "en",
 	}
 
-	res, err := googleAPI.googleMaps.PlaceAutocomplete(context.Background(), &req)
+	res, err := api.googleMaps.PlaceAutocomplete(context.Background(), &req)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"query": query,
@@ -111,7 +111,7 @@ func (googleAPI *GoogleAPI) GetPlaceAutocompleteSuggestions(query string) ([]ent
 	return suggestionsCollection, nil
 }
 
-func (googleAPI *GoogleAPI) GetPlacesDistance(placeIDs []string) (entity.DistanceMatrix, error) {
+func (api *googleAPI) GetPlacesDistance(placeIDs []string) (entity.DistanceMatrix, error) {
 	start := time.Now()
 
 	log.WithFields(log.Fields{
@@ -131,9 +131,8 @@ func (googleAPI *GoogleAPI) GetPlacesDistance(placeIDs []string) (entity.Distanc
 	}
 
 	distanceMatrix := entity.NewDistanceMatrix()
-	distanceMatrix.Get("a", "b")
 
-	res, err := googleAPI.googleMaps.DistanceMatrix(context.Background(), &req)
+	res, err := api.googleMaps.DistanceMatrix(context.Background(), &req)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"places": placeIDs,

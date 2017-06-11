@@ -9,19 +9,19 @@ import (
 const cachePrefixPlace = "place_"
 const cachePrefixSuggestion = "suggestion_"
 
-type PlacesService struct {
+type placesService struct {
 	cache Cache
 	api   PlacesAPI
 }
 
-func NewPlacesService(c Cache, a PlacesAPI) *PlacesService {
-	return &PlacesService{
+func NewPlacesService(c Cache, a PlacesAPI) *placesService {
+	return &placesService{
 		c,
 		a,
 	}
 }
 
-func (s *PlacesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place {
+func (s *placesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place {
 	var waitGroup sync.WaitGroup
 
 	placesChan := make(chan *entity.Place)
@@ -50,7 +50,7 @@ func (s *PlacesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entit
 	return placesCollection
 }
 
-func (s *PlacesService) getPlace(placeID string) *entity.Place {
+func (s *placesService) getPlace(placeID string) *entity.Place {
 	cachedPlace, found := s.cache.Get(cachePrefixPlace + placeID)
 	if found {
 		log.WithFields(log.Fields{
@@ -74,7 +74,7 @@ func (s *PlacesService) getPlace(placeID string) *entity.Place {
 	return p
 }
 
-func (s *PlacesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
+func (s *placesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
 	cachedSuggestions, found := s.cache.Get(cachePrefixSuggestion + keyword)
 	if found {
 		log.WithFields(log.Fields{
@@ -98,7 +98,7 @@ func (s *PlacesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.S
 	return suggestions
 }
 
-func (s *PlacesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
+func (s *placesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
 	distanceMatrix, err := s.api.GetPlacesDistance(placesIDs)
 	if err != nil {
 		log.WithFields(log.Fields{

@@ -6,21 +6,21 @@ import (
 	"net/http"
 )
 
-type CitySuggestionsCollectionService interface {
+type citySuggestionsCollectionService interface {
 	GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion
 }
 
-type CitiesSuggestion struct {
-	citySuggestionService CitySuggestionsCollectionService
+type citiesSuggestion struct {
+	citySuggestionService citySuggestionsCollectionService
 }
 
-func NewCitiesSuggestion(s CitySuggestionsCollectionService) *CitiesSuggestion {
-	return &CitiesSuggestion{
+func NewCitiesSuggestion(s citySuggestionsCollectionService) *citiesSuggestion {
+	return &citiesSuggestion{
 		citySuggestionService: s,
 	}
 }
 
-func (handler *CitiesSuggestion) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (handler *citiesSuggestion) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	keyword := r.URL.Query().Get("q")
 
 	if keyword == "" {

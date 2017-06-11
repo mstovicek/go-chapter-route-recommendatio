@@ -8,21 +8,21 @@ import (
 	"net/http"
 )
 
-type CityDistancesService interface {
+type cityDistancesService interface {
 	GetPlacesDistance(placeIDs []string) entity.DistanceMatrix
 }
 
-type CitiesDistances struct {
-	citiesDistancesService CityDistancesService
+type citiesDistances struct {
+	citiesDistancesService cityDistancesService
 }
 
-func NewCitiesDistances(s CityDistancesService) *CitiesDistances {
-	return &CitiesDistances{
+func NewCitiesDistances(s cityDistancesService) *citiesDistances {
+	return &citiesDistances{
 		citiesDistancesService: s,
 	}
 }
 
-func (handler *CitiesDistances) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (handler *citiesDistances) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if nil == r.Body {
 		response.WriteError(w, http.StatusBadRequest, "body is empty")
 		return
