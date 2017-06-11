@@ -41,7 +41,7 @@ func (api *server) Run() {
 	r.Handle(
 		"/cities-suggestions/",
 		handler.NewCitiesSuggestion(
-			services.NewService(
+			services.NewPlacesService(
 				cache.New(5*time.Second, 10*time.Second),
 				places_api.NewGoogleAPI(),
 			),
@@ -51,7 +51,7 @@ func (api *server) Run() {
 	r.Handle(
 		"/cities-info/",
 		handler.NewCitiesInfo(
-			services.NewService(
+			services.NewPlacesService(
 				cache.New(5*time.Second, 10*time.Second),
 				places_api.NewGoogleAPI(),
 			),

@@ -9,19 +9,19 @@ import (
 const cachePrefixPlace = "place_"
 const cachePrefixSuggestion = "suggestion_"
 
-type Service struct {
+type PlacesService struct {
 	cache Cache
 	api   API
 }
 
-func NewService(c Cache, a API) *Service {
-	return &Service{
+func NewPlacesService(c Cache, a API) *PlacesService {
+	return &PlacesService{
 		c,
 		a,
 	}
 }
 
-func (s *Service) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place {
+func (s *PlacesService) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place {
 	var waitGroup sync.WaitGroup
 
 	placesChan := make(chan *entity.Place)
@@ -50,7 +50,7 @@ func (s *Service) GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Plac
 	return placesCollection
 }
 
-func (s *Service) getPlace(placeID string) *entity.Place {
+func (s *PlacesService) getPlace(placeID string) *entity.Place {
 	cachedPlace, found := s.cache.Get(cachePrefixPlace + placeID)
 	if found {
 		log.WithFields(log.Fields{
@@ -74,7 +74,7 @@ func (s *Service) getPlace(placeID string) *entity.Place {
 	return p
 }
 
-func (s *Service) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
+func (s *PlacesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
 	cachedSuggestions, found := s.cache.Get(cachePrefixSuggestion + keyword)
 	if found {
 		log.WithFields(log.Fields{
