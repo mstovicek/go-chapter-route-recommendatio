@@ -3,7 +3,7 @@ package api
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/joeshaw/envdecode"
+	"github.com/jessevdk/go-flags"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/handler"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/middleware"
 	"github.com/mstovicek/go-chapter-route-recommendation/places_api"
@@ -14,7 +14,7 @@ import (
 )
 
 type config struct {
-	Port string `env:"PORT,default=8080"`
+	Listen string `long:"listen" description:"Listen address" default:":8080" required:"true"`
 }
 
 type server struct {
@@ -24,8 +24,9 @@ type server struct {
 
 func NewApiHttpServer(l *log.Logger) *server {
 	var cnf config
-	if err := envdecode.Decode(&cnf); err != nil {
-		panic(err)
+
+	if _, err := flags.NewParser(&cnf, flags.HelpFlag|flags.PassDoubleDash).Parse(); err != nil {
+		log.Fatalln(err)
 	}
 
 	return &server{
@@ -69,5 +70,6 @@ func (api *server) Run() {
 		),
 	)
 
-	log.Fatal(http.ListenAndServe(":"+api.config.Port, router))
+	log.Infof("Listening on the address %s", api.config.Listen)
+	log.Fatal(http.ListenAndServe(api.config.Listen, router))
 }

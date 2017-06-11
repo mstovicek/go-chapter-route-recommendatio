@@ -1,23 +1,25 @@
-hash: da88beff52f1c98dbd9971ae46d62b03eb850668cbb9786bebed386ef24e5eec
-updated: 2017-06-10T15:40:02.266353984+02:00
+hash: b79ab3479b6058108357a3d467213c04cbef3cecd05d4c018d8532957159d882
+updated: 2017-06-11T12:30:44.361011189+02:00
 imports:
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: bcd8bc72b08df0f70df986b97f95590779502d31
+- name: github.com/jessevdk/go-flags
+  version: 48cf8722c3375517aba351d1f7577c40663a4407
 - name: github.com/joeshaw/envdecode
-  version: 80f1552844fb7b53167f2eece6242494396b2fe6
+  version: 6326cbed175e32cd5183be1cc1027e0823c91edb
 - name: github.com/patrickmn/go-cache
   version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
 - name: github.com/Sirupsen/logrus
   version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: golang.org/x/net
-  version: 35b06af0720201bc2f326773a80767387544f8c4
+  version: 1a68b1313cf4ad7778376e82641197b60c02f65c
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: a55a76086885b80f79961eacb876ebd8caf3868d
+  version: 0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79
   subpackages:
   - unix
 - name: googlemaps.github.io/maps

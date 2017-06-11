@@ -11,7 +11,7 @@ import (
 )
 
 type config struct {
-	GoogleAPIKey string `env:"API_KEY"`
+	GoogleAPIKey string `env:"API_KEY,required,strict"`
 }
 
 type GoogleAPI struct {
@@ -23,7 +23,7 @@ func NewGoogleAPI() *GoogleAPI {
 	cnf := config{}
 
 	if err := envdecode.Decode(&cnf); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	googleMaps, err := maps.NewClient(maps.WithAPIKey(cnf.GoogleAPIKey))
