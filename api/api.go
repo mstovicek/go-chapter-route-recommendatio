@@ -58,6 +58,16 @@ func (api *server) Run() {
 		),
 	).Methods(http.MethodPost)
 
+	r.Handle(
+		"/distances-matrix/",
+		handler.NewCitiesDistances(
+			services.NewPlacesService(
+				cache.New(5*time.Second, 10*time.Second),
+				places_api.NewGoogleAPI(),
+			),
+		),
+	).Methods(http.MethodPost)
+
 	http.Handle("/", r)
 
 	router := middleware.NewRecovery(

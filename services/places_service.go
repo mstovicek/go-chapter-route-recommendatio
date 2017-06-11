@@ -97,3 +97,15 @@ func (s *PlacesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.S
 
 	return suggestions
 }
+
+func (s *PlacesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
+	distanceMatrix, err := s.api.GetPlacesDistance(placesIDs)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"places": placesIDs,
+			"err":    err.Error(),
+		}).Error("Cannot get distances")
+		return entity.NewDistanceMatrix()
+	}
+	return distanceMatrix
+}

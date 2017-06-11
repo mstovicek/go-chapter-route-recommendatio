@@ -61,7 +61,7 @@ func (googleAPI *GoogleAPI) GetPlaceDetail(placeID string) (*entity.Place, error
 
 	log.WithFields(log.Fields{
 		"placeID": placeID,
-		"timeMs":  time.Since(start),
+		"time":    time.Since(start),
 	}).Info("Fetched place information")
 
 	p := entity.Place{
@@ -96,8 +96,8 @@ func (googleAPI *GoogleAPI) GetPlaceAutocompleteSuggestions(query string) ([]ent
 	}
 
 	log.WithFields(log.Fields{
-		"query":  query,
-		"timeMs": time.Since(start),
+		"query": query,
+		"time":  time.Since(start),
 	}).Info("Fetched suggestions")
 
 	suggestionsCollection := make([]entity.Suggestion, len(res.Predictions))
@@ -109,4 +109,58 @@ func (googleAPI *GoogleAPI) GetPlaceAutocompleteSuggestions(query string) ([]ent
 	}
 
 	return suggestionsCollection, nil
+}
+
+func (googleAPI *GoogleAPI) GetPlacesDistance(placeIDs []string) (entity.DistanceMatrix, error) {
+	start := time.Now()
+
+	log.WithFields(log.Fields{
+		"places": placeIDs,
+	}).Info("Fetching distance matrix")
+
+	placeIDsForRequest := make([]string, len(placeIDs))
+	for i, placeID := range placeIDs {
+		placeIDsForRequest[i] = "place_id:" + placeID
+	}
+
+	req := maps.DistanceMatrixRequest{
+		Language:     "en",
+		Units:        maps.UnitsMetric,
+		Origins:      placeIDsForRequest,
+		Destinations: placeIDsForRequest,
+	}
+
+	distanceMatrix := entity.NewDistanceMatrix()
+	distanceMatrix.Get("a", "b")
+
+	res, err := googleAPI.googleMaps.DistanceMatrix(context.Background(), &req)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"places": placeIDs,
+			"err":    err.Error(),
+		}).Warn("Distance matrix request not successful")
+		return nil, err
+	}
+
+	for i, row := range res.Rows {
+		for j, elem := range row.Elements {
+			distanceMatrix.Add(
+				placeIDs[i],
+				placeIDs[j],
+				entity.Distance{
+					FromPlaceID:     placeIDs[i],
+					ToPlaceID:       placeIDs[j],
+					DistanceMetres:  elem.Distance.Meters,
+					DurationSeconds: elem.Duration.Seconds(),
+				},
+			)
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"places": placeIDs,
+		"time":   time.Since(start),
+	}).Info("Fetched distance")
+
+	return distanceMatrix, nil
 }
