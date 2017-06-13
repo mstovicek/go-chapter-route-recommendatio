@@ -27,7 +27,7 @@ func NewPlacesService(cache Cache, api PlacesAPI, logger *logrus.Logger) *places
 	}
 }
 
-func (service *placesService) GetPlacesCollectionByPlaceIds(placeIDs []string) []entity.Place {
+func (service *placesService) GetPlacesCollectionByPlaceIds(placeIDs []string) ([]entity.Place, error) {
 	start := time.Now()
 
 	service.logger.WithFields(logrus.Fields{
@@ -64,7 +64,7 @@ func (service *placesService) GetPlacesCollectionByPlaceIds(placeIDs []string) [
 		"time":   time.Since(start),
 	}).Info("Fetched places information")
 
-	return placesCollection
+	return placesCollection, nil
 }
 
 func (service *placesService) getPlace(placeID string) *entity.Place {
@@ -104,7 +104,7 @@ func (service *placesService) getPlace(placeID string) *entity.Place {
 	return p
 }
 
-func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion {
+func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) ([]entity.Suggestion, error) {
 	cacheKey := cachePrefixSuggestion + keyword
 
 	cachedSuggestions, found := service.cache.Get(cacheKey)
@@ -113,7 +113,7 @@ func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) []en
 			"keyword": keyword,
 		}).Info("Returning cached suggestions")
 
-		return cachedSuggestions.([]entity.Suggestion)
+		return cachedSuggestions.([]entity.Suggestion), nil
 	}
 
 	start := time.Now()
@@ -123,12 +123,19 @@ func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) []en
 	}).Info("Fetching suggestions")
 
 	suggestions, err := service.api.GetPlaceAutocompleteSuggestions(keyword)
+	if err.Error() != "maps: ZERO_RESULTS -" {
+		service.logger.WithFields(logrus.Fields{
+			"keyword": keyword,
+			"err":     err.Error(),
+		}).Info("No suggestions found")
+		return []entity.Suggestion{}, nil
+	}
 	if err != nil {
 		service.logger.WithFields(logrus.Fields{
 			"keyword": keyword,
 			"err":     err.Error(),
 		}).Error("Cannot get suggestions")
-		return []entity.Suggestion{}
+		return []entity.Suggestion{}, err
 	}
 
 	service.logger.WithFields(logrus.Fields{
@@ -138,10 +145,10 @@ func (service *placesService) GetPlacesSuggestionsByKeyword(keyword string) []en
 
 	service.cache.Set(cacheKey, suggestions, 0)
 
-	return suggestions
+	return suggestions, nil
 }
 
-func (service *placesService) GetPlacesDistance(placesIDs []string) entity.DistanceMatrix {
+func (service *placesService) GetPlacesDistance(placesIDs []string) (entity.DistanceMatrix, error) {
 	sort.Strings(placesIDs)
 	cacheKey := cachePrefixDistances + strings.Join(placesIDs, "|")
 
@@ -151,7 +158,7 @@ func (service *placesService) GetPlacesDistance(placesIDs []string) entity.Dista
 			"places": cacheKey,
 		}).Info("Returning cached distance matrix")
 
-		return cachedDistanceMatrix.(entity.DistanceMatrix)
+		return cachedDistanceMatrix.(entity.DistanceMatrix), nil
 	}
 
 	start := time.Now()
@@ -166,7 +173,7 @@ func (service *placesService) GetPlacesDistance(placesIDs []string) entity.Dista
 			"places": placesIDs,
 			"err":    err.Error(),
 		}).Error("Cannot get distances")
-		return entity.NewDistanceMatrix()
+		return entity.NewDistanceMatrix(), err
 	}
 
 	service.logger.WithFields(logrus.Fields{
@@ -176,5 +183,5 @@ func (service *placesService) GetPlacesDistance(placesIDs []string) entity.Dista
 
 	service.cache.Set(cacheKey, distanceMatrix, 0)
 
-	return distanceMatrix
+	return distanceMatrix, nil
 }

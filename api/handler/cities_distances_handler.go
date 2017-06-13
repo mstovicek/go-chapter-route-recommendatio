@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/response"
 	"github.com/mstovicek/go-chapter-route-recommendation/entity"
 	"io/ioutil"
@@ -9,7 +10,7 @@ import (
 )
 
 type cityDistancesService interface {
-	GetPlacesDistance(placeIDs []string) entity.DistanceMatrix
+	GetPlacesDistance(placeIDs []string) (entity.DistanceMatrix, error)
 }
 
 type citiesDistances struct {
@@ -42,11 +43,19 @@ func (handler *citiesDistances) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	dMap := handler.citiesDistancesService.GetPlacesDistance(in)
+	distancesMap, err := handler.citiesDistancesService.GetPlacesDistance(in)
+	if err != nil {
+		response.WriteError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Sprintf("cannot fetch distances, error: %s", err.Error()),
+		)
+		return
+	}
 
 	var slice []entity.Distance
 
-	for _, ddMap := range dMap {
+	for _, ddMap := range distancesMap {
 		for _, dist := range ddMap {
 			slice = append(slice, dist)
 		}

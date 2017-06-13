@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/response"
 	"github.com/mstovicek/go-chapter-route-recommendation/entity"
 	"net/http"
 )
 
 type citySuggestionsCollectionService interface {
-	GetPlacesSuggestionsByKeyword(keyword string) []entity.Suggestion
+	GetPlacesSuggestionsByKeyword(keyword string) ([]entity.Suggestion, error)
 }
 
 type citiesSuggestion struct {
@@ -28,5 +29,15 @@ func (handler *citiesSuggestion) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	response.WriteSuccess(w, handler.citySuggestionService.GetPlacesSuggestionsByKeyword(keyword))
+	suggestions, err := handler.citySuggestionService.GetPlacesSuggestionsByKeyword(keyword)
+	if err != nil {
+		response.WriteError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Sprintf("cannot fetch suggestions, error: %s", err.Error()),
+		)
+		return
+	}
+
+	response.WriteSuccess(w, suggestions)
 }

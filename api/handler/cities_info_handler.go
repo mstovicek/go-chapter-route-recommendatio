@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mstovicek/go-chapter-route-recommendation/api/response"
 	"github.com/mstovicek/go-chapter-route-recommendation/entity"
 	"io/ioutil"
@@ -9,7 +10,7 @@ import (
 )
 
 type cityDetailsCollectionService interface {
-	GetPlacesCollectionByPlaceIds(placeIds []string) []entity.Place
+	GetPlacesCollectionByPlaceIds(placeIds []string) ([]entity.Place, error)
 }
 
 type citiesInfo struct {
@@ -42,5 +43,15 @@ func (handler *citiesInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteSuccess(w, handler.cityDetailService.GetPlacesCollectionByPlaceIds(in))
+	placesCollection, err := handler.cityDetailService.GetPlacesCollectionByPlaceIds(in)
+	if err != nil {
+		response.WriteError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Sprintf("cannot fetch places, error: %s", err.Error()),
+		)
+		return
+	}
+
+	response.WriteSuccess(w, placesCollection)
 }
