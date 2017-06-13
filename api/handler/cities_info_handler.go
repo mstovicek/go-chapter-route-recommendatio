@@ -38,7 +38,7 @@ func (handler *citiesInfo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var in []string
 	if err := json.Unmarshal(data, &in); err != nil {
-		response.WriteError(w, 400, "invalid request format")
+		response.WriteError(w, http.StatusBadRequest, "invalid request format")
 		return
 	}
 
